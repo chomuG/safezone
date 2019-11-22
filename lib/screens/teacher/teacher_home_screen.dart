@@ -2,6 +2,7 @@ import 'package:beacon_bus/blocs/login/login_provider.dart';
 import 'package:beacon_bus/blocs/teacher/teacher_bloc.dart';
 import 'package:beacon_bus/blocs/teacher/teacher_provider.dart';
 import 'package:beacon_bus/constants.dart';
+import 'package:beacon_bus/screens/beacon/tab_ranging.dart';
 import 'package:beacon_bus/screens/teacher/teacher_activity_screen.dart';
 import 'package:beacon_bus/screens/teacher/teacher_bus_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class TeacherHomeScreen extends StatefulWidget {
+  static int carNum;
   @override
   _TeacherHomeScreenState createState() => _TeacherHomeScreenState();
 }
@@ -18,7 +20,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
   String teacherName;
   String className;
   String uid;
-  int carNum;
+  int carNum = TeacherHomeScreen.carNum;
 
   @override
   Widget build(BuildContext context) {
@@ -255,7 +257,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
           child: Padding(
             padding: EdgeInsets.all(5.0),
             child: Text(
-              bloc.prefs.getString(USER_NAME)+" 선생님",
+              bloc.prefs.getString(USER_NAME) + " 선생님",
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 20.0,
@@ -307,6 +309,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                     dropdownValue = value;
                     carNum =
                         busList.indexWhere((num) => num.startsWith(value)) + 1;
+                    TeacherHomeScreen.carNum = carNum;
                   });
                 },
                 items: busList
@@ -388,25 +391,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
           ),
           content: Text(carNum.toString() + "호차 운행을 시작하시겠습니까?"),
           actions: <Widget>[
-            CupertinoButton(
-              child: Text(
-                "운행 시작",
-                style: TextStyle(
-                  color: Color(0xFF1EA8E0),
-                ),
-              ),
-              onPressed: () {
-                _setBusTeacherName(teacherName, carNum);
-                Navigator.of(context).pop();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => TeacherBusScreen(
-                            carNum: carNum,
-                          )),
-                );
-              },
-            ),
+            RangingTab(),
             CupertinoButton(
               child: Text(
                 "취소",
@@ -424,7 +409,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
     );
   }
 
-  _setBusTeacherName(String teacherName, int busNum) {
+  setBusTeacherName(String teacherName, int busNum) {
     Firestore.instance
         .collection('Kindergarden')
         .document('hamang')

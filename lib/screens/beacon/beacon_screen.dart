@@ -19,6 +19,12 @@ class _BeaconScreenState extends State<BeaconScreen> {
         ),
         body: Column(
           children: <Widget>[
+//            FlatButton(
+//              child: Text('test'),
+//              onPressed: () {
+//                RangingTab();
+//              },
+//            ),
             RangingTab(),
             Expanded(child: _buildBody(context)),
           ],

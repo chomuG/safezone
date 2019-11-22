@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:beacon_bus/constants.dart';
 import 'package:beacon_bus/models/children.dart';
+import 'package:beacon_bus/screens/beacon/tab_ranging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -10,9 +11,10 @@ import 'package:intl/intl.dart';
 
 class TeacherBusScreen extends StatefulWidget {
   final int carNum;
-  TeacherBusScreen({Key key, this.carNum}): super(key: key);
+  TeacherBusScreen({Key key, this.carNum}) : super(key: key);
   @override
-  _TeacherBusScreenState createState() => _TeacherBusScreenState(carNum: carNum);
+  _TeacherBusScreenState createState() =>
+      _TeacherBusScreenState(carNum: carNum);
 }
 
 class _TeacherBusScreenState extends State<TeacherBusScreen> {
@@ -26,15 +28,22 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
   int notBoarding;
   int unKnown;
 
+//  @override
+//  void dispose() {
+//    super.dispose();
+//  }
+
   @override
   void initState() {
     super.initState();
+    RangingTab();
     _getCount("board");
     _getCount("unknown");
     _getCount("notboard");
     flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
 
-    var initializationSettingsAndroid = new AndroidInitializationSettings('app_icon');
+    var initializationSettingsAndroid =
+        new AndroidInitializationSettings('app_icon');
     var initializationSettingsIOS = new IOSInitializationSettings();
     var initializationSettings = new InitializationSettings(
         initializationSettingsAndroid, initializationSettingsIOS);
@@ -42,26 +51,26 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
     flutterLocalNotificationsPlugin.initialize(initializationSettings,
         onSelectNotification: onSelectNotification);
   }
+
   Future onSelectNotification(String payload) {
     debugPrint("payload : $payload");
     showDialog(
       context: context,
       builder: (_) => CupertinoAlertDialog(
-        title: Text('승하차 알림'),
-        content: Text('$payload'),
-      ),
+            title: Text('승하차 알림'),
+            content: Text('$payload'),
+          ),
     );
   }
+
   showNotification(String stateAlarm) async {
     var android = new AndroidNotificationDetails(
         'channel id', 'channel NAME', 'CHANNEL DESCRIPTION',
-        priority: Priority.High,importance: Importance.Max
-    );
+        priority: Priority.High, importance: Importance.Max);
     var iOS = new IOSNotificationDetails();
     var platform = new NotificationDetails(android, iOS);
-    await flutterLocalNotificationsPlugin.show(
-        0, '승하차 알림', stateAlarm, platform,
-        payload: stateAlarm);
+    await flutterLocalNotificationsPlugin
+        .show(0, '승하차 알림', stateAlarm, platform, payload: stateAlarm);
   }
 
   void _getCount(String boardingState) {
@@ -71,11 +80,12 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
         .collection('Children')
         .where('busNum', isEqualTo: carNum.toString())
         .where('boardState', isEqualTo: boardingState)
-        .snapshots().listen((data) {
+        .snapshots()
+        .listen((data) {
       setState(() {
-        if(boardingState == "board") {
+        if (boardingState == "board") {
           boarding = data.documents.length;
-        } else if(boardingState == "unknown") {
+        } else if (boardingState == "unknown") {
           unKnown = data.documents.length;
         } else {
           notBoarding = data.documents.length;
@@ -83,12 +93,13 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
       });
     });
   }
+
   void _setStateChanged(String boardStateName) {
     setState(() {
-      if(boardStateName == '탑승중') {
+      if (boardStateName == '탑승중') {
         boardingState = "board";
         boardingStateTitle = "현재 탑승 명단";
-      } else if(boardStateName == '미탑승') {
+      } else if (boardStateName == '미탑승') {
         boardingState = "unknown";
         boardingStateTitle = "현재 미탑승 명단";
       } else {
@@ -124,7 +135,7 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
   Widget _buildAppbar() {
     return AppBar(
       title: Text(
-        SCHOOL_NAME +" "+carNum.toString()+"호 차량",
+        SCHOOL_NAME + " " + carNum.toString() + "호 차량",
         style: TextStyle(
           fontWeight: FontWeight.bold,
         ),
@@ -140,15 +151,15 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
         padding: EdgeInsets.only(top: 5.0, right: 5.0, left: 5.0),
         child: Row(
           children: <Widget>[
-            _buildState(Icon(Icons.check_circle), Colors.green, "탑승중", boarding),
+            _buildState(
+                Icon(Icons.check_circle), Colors.green, "탑승중", boarding),
             _buildState(Icon(Icons.cancel), Colors.red, "미탑승", unKnown),
             _buildState(Icon(Icons.error), Colors.orange, "개인이동", notBoarding),
           ],
-        )
-    );
+        ));
   }
 
-  Widget _buildState(Icon stateIcon, Color stateColor, String name, int count){
+  Widget _buildState(Icon stateIcon, Color stateColor, String name, int count) {
     return Flexible(
       flex: 1,
       child: FlatButton(
@@ -166,7 +177,7 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
                 child: stateIcon,
               ),
             ),
-            Text(name+ " "+count.toString()+"명"),
+            Text(name + " " + count.toString() + "명"),
           ],
         ),
       ),
@@ -215,7 +226,7 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
 
   Widget _buildBoardMember() {
     return StreamBuilder(
-        stream:  Firestore.instance
+        stream: Firestore.instance
             .collection('Kindergarden')
             .document('hamang')
             .collection('Children')
@@ -225,16 +236,17 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
         builder: (context, snapshot) {
           if (!snapshot.hasData) return LinearProgressIndicator();
           return _buildMemberList(context, snapshot.data.documents);
-        }
-    );
+        });
   }
 
-  Widget _buildMemberList(BuildContext context, List<DocumentSnapshot> snapshot) {
+  Widget _buildMemberList(
+      BuildContext context, List<DocumentSnapshot> snapshot) {
     return GridView.count(
       crossAxisCount: 3,
       padding: EdgeInsets.all(10.0),
       childAspectRatio: 8.0 / 8.0,
-      children: snapshot.map((data) => _buildMemberListItem(context, data)).toList(),
+      children:
+          snapshot.map((data) => _buildMemberListItem(context, data)).toList(),
     );
   }
 
@@ -253,7 +265,7 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
             AspectRatio(
               aspectRatio: 16 / 9,
               child: Image(
-                image: AssetImage('images/adddefault.JPG'),
+                image: AssetImage('images/adddefault.jpg'),
               ),
             ),
             Container(
@@ -293,7 +305,7 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
 
   Widget _buildStateIcon(String boardState) {
     // notBoardingDate가 없을때 조건도 추가해야함.
-    if(boardState == 'board') {
+    if (boardState == 'board') {
       return IconTheme(
         data: IconThemeData(
           color: Colors.green,
@@ -303,7 +315,7 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
           size: 20.0,
         ),
       );
-    } else if(boardState == 'unknown') {
+    } else if (boardState == 'unknown') {
       return IconTheme(
         data: IconThemeData(
           color: Colors.red,
@@ -345,17 +357,18 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
     );
   }
 
-  void _changeStateSave(String id, String name, String currentState, String state) {
+  void _changeStateSave(
+      String id, String name, String currentState, String state) {
     if (currentState != state) {
       Firestore.instance
           .collection('Kindergarden')
           .document('hamang')
           .collection('Children')
-          .document(id).updateData({
+          .document(id)
+          .updateData({
         'boardState': state,
-        'changeStateTime': DateFormat('yyyy-MM-dd hh:mm')
-            .format(DateTime.now())
-            .toString(),
+        'changeStateTime':
+            DateFormat('yyyy-MM-dd hh:mm').format(DateTime.now()).toString(),
       });
       if (state == 'board') {
         showNotification(name + '이 승차했습니다.');
@@ -492,7 +505,7 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
                 ),
               ),
               onPressed: () {
-                if(boarding > 0){
+                if (boarding > 0) {
                   Navigator.of(context).pop();
                   _showStateCheckDialog(boarding);
                 } else {
@@ -529,10 +542,9 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            content: Text(
-                count.toString() + "명이 탑승중 입니다.\n"
-                    "차량을 확인해주세요."
-            ),
+            content: Text(count.toString() +
+                "명이 탑승중 입니다.\n"
+                "차량을 확인해주세요."),
             actions: <Widget>[
               CupertinoButton(
                 onPressed: () {
@@ -547,8 +559,7 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
               ),
             ],
           );
-        }
-    );
+        });
   }
 
   void _showCloseDialog() {
@@ -599,7 +610,8 @@ class _TeacherBusScreenState extends State<TeacherBusScreen> {
         .collection('Kindergarden')
         .document('hamang')
         .collection('Bus')
-        .document(busNum.toString()+'호차').updateData({
+        .document(busNum.toString() + '호차')
+        .updateData({
       'teacher': teacherName,
     });
   }

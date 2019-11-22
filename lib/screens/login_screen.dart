@@ -89,7 +89,7 @@ class LoginScreen extends StatelessWidget {
         String userType = bloc.prefs.getString(USER_TYPE);
         if (userType == "teacher") {
           Navigator.pushNamedAndRemoveUntil(
-              context, '/beacon', (Route r) => false);
+              context, '/teacher', (Route r) => false);
         } else if (userType == "parent") {
           Navigator.pushNamedAndRemoveUntil(
               context, '/parent', (Route r) => false);

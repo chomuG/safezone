@@ -3,21 +3,28 @@
 
 import 'dart:io';
 
+import 'package:beacon_bus/blocs/login/login_provider.dart';
+import 'package:beacon_bus/constants.dart';
+import 'package:beacon_bus/screens/teacher/teacher_bus_screen.dart';
 import 'package:beacons/beacons.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:beacon_bus/screens/teacher/teacher_home_screen.dart';
 
 class Header extends StatefulWidget {
-  const Header(
-      {Key key, this.regionIdentifier, this.running, this.onStart, this.onStop})
-      : super(key: key);
+  const Header({
+    Key key,
+    this.regionIdentifier,
+    this.running,
+    this.onStart,
+  }) : super(key: key);
 
   final String regionIdentifier;
   final bool running;
   final ValueChanged<BeaconRegion> onStart;
-  final VoidCallback onStop;
 
   @override
   _HeaderState createState() => new _HeaderState();
@@ -25,48 +32,21 @@ class Header extends StatefulWidget {
 
 class _HeaderState extends State<Header> {
   FormType _formType;
-  TextEditingController _id1Controller;
-  TextEditingController _id2Controller;
-  TextEditingController _id3Controller;
-
   final GlobalKey<FormState> _formKey = new GlobalKey<FormState>();
 
   @override
   void initState() {
     super.initState();
-
     _formType = Platform.isIOS ? FormType.iBeacon : FormType.generic;
-
-    _id1Controller = TextEditingController();
-    _id2Controller = TextEditingController();
-    _id3Controller = TextEditingController();
-  }
-
-  void _onFormTypeChanged(FormType value) {
-    setState(() {
-      _formType = value;
-    });
   }
 
   void _onTapSubmit() {
     if (widget.running) {
-      widget.onStop();
     } else {
       if (!_formKey.currentState.validate()) {
         return;
       }
       List<dynamic> ids = [];
-      if (_id1Controller.value.text.isNotEmpty) {
-        ids.add(_id1Controller.value.text);
-
-        if (_id2Controller.value.text.isNotEmpty) {
-          ids.add(_id2Controller.value.text);
-
-          if (_id3Controller.value.text.isNotEmpty) {
-            ids.add(_id3Controller.value.text);
-          }
-        }
-      }
       BeaconRegion region =
           BeaconRegion(identifier: widget.regionIdentifier, ids: ids);
 
@@ -87,61 +67,20 @@ class _HeaderState extends State<Header> {
       padding: const EdgeInsets.all(8.0),
       child: Column(
         children: <Widget>[
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: new Text(
-                'Beacon format',
-                style: Theme.of(context).textTheme.title,
-              ),
-            ),
-          ),
-          new Row(
-            mainAxisSize: MainAxisSize.max,
-            children: <Widget>[
-              new Flexible(
-                  child: new RadioListTile(
-                value: FormType.generic,
-                groupValue: _formType,
-                onChanged: widget.running
-                    ? null
-                    : (Platform.isAndroid ? _onFormTypeChanged : null),
-                title: new Text(Platform.isAndroid
-                    ? 'Generic'
-                    : 'Generic (not supported on iOS)'),
-              )),
-              new Flexible(
-                  child: new RadioListTile(
-                value: FormType.iBeacon,
-                groupValue: _formType,
-                onChanged: widget.running ? null : _onFormTypeChanged,
-                title: const Text('iBeacon'),
-              )),
-            ],
-          ),
           new Form(
             key: _formKey,
             child: _formType == FormType.generic
                 ? new _FormGeneric(
                     running: widget.running,
-                    id1Controller: _id1Controller,
-                    id2Controller: _id2Controller,
-                    id3Controller: _id3Controller,
                   )
                 : new _FormIBeacon(
                     running: widget.running,
-                    id1Controller: _id1Controller,
-                    id2Controller: _id2Controller,
-                    id3Controller: _id3Controller,
                   ),
           ),
-          new SizedBox(
-            height: 10.0,
-          ),
-          new _Button(
+          _Button(
             running: widget.running,
             onTap: _onTapSubmit,
-          ),
+          )
         ],
       ),
     );
@@ -156,64 +95,50 @@ class _Button extends StatelessWidget {
 
   final bool running;
   final VoidCallback onTap;
-
+  int carNum = TeacherHomeScreen.carNum;
   @override
   Widget build(BuildContext context) {
-    return new Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6.0),
-      child: new GestureDetector(
-        onTap: onTap,
-        child: new Container(
-          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 15.0),
-          decoration: new BoxDecoration(
-            color: running ? Colors.deepOrange : Colors.teal,
-            borderRadius: new BorderRadius.all(
-              new Radius.circular(6.0),
-            ),
-          ),
-          child: new Text(
-            running ? 'Stop' : 'Start',
-            style: const TextStyle(color: Colors.white),
-          ),
+    final bloc = LoginProvider.of(context);
+    String teacherName = bloc.prefs.getString(USER_NAME);
+    return CupertinoButton(
+      child: Text(
+        "운행 시작",
+        style: TextStyle(
+          color: Color(0xFF1EA8E0),
         ),
       ),
+      onPressed: () {
+        onTap();
+        Firestore.instance
+            .collection('Kindergarden')
+            .document('hamang')
+            .collection('Bus')
+            .document(carNum.toString() + '호차')
+            .updateData({
+          'teacher': teacherName,
+        });
+        Navigator.of(context).pop();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => TeacherBusScreen(
+                    carNum: carNum,
+                  )),
+        );
+      },
     );
   }
 }
 
 enum FormType { generic, iBeacon }
 
-class _TextFieldDecoration extends InputDecoration {
-  const _TextFieldDecoration()
-      : super(
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 6.0, horizontal: 10.0),
-          border: const OutlineInputBorder(
-            borderRadius: const BorderRadius.all(
-              const Radius.circular(5.0),
-            ),
-            borderSide: const BorderSide(
-              color: Colors.black,
-              width: 1.0,
-            ),
-          ),
-        );
-}
-
 class _FormGeneric extends StatelessWidget {
-  const _FormGeneric(
-      {Key key,
-      this.running,
-      this.id1Controller,
-      this.id2Controller,
-      this.id3Controller})
-      : super(key: key);
+  const _FormGeneric({
+    Key key,
+    this.running,
+  }) : super(key: key);
 
   final bool running;
-  final TextEditingController id1Controller;
-  final TextEditingController id2Controller;
-  final TextEditingController id3Controller;
-
   @override
   Widget build(BuildContext context) {
     return Container();
@@ -221,63 +146,15 @@ class _FormGeneric extends StatelessWidget {
 }
 
 class _FormIBeacon extends StatelessWidget {
-  const _FormIBeacon(
-      {Key key,
-      this.running,
-      this.id1Controller,
-      this.id2Controller,
-      this.id3Controller})
-      : super(key: key);
+  const _FormIBeacon({
+    Key key,
+    this.running,
+  }) : super(key: key);
 
   final bool running;
-  final TextEditingController id1Controller;
-  final TextEditingController id2Controller;
-  final TextEditingController id3Controller;
 
   @override
   Widget build(BuildContext context) {
-    return new Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        new TextFormField(
-          enabled: !running,
-          validator: (String value) {
-            if (value.isEmpty) {
-              return 'required';
-            }
-          },
-          controller: id1Controller,
-          decoration: const _TextFieldDecoration().copyWith(hintText: 'UDID'),
-        ),
-        new SizedBox(
-          height: 10.0,
-        ),
-        new Row(
-          mainAxisSize: MainAxisSize.max,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            new Flexible(
-              child: new TextFormField(
-                enabled: !running,
-                controller: id2Controller,
-                decoration: const _TextFieldDecoration()
-                    .copyWith(hintText: 'Major (optional)'),
-              ),
-            ),
-            new SizedBox(
-              width: 10.0,
-            ),
-            new Flexible(
-              child: new TextFormField(
-                enabled: !running,
-                controller: id3Controller,
-                decoration: const _TextFieldDecoration()
-                    .copyWith(hintText: 'Minor (optional)'),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
+    return Container();
   }
 }
